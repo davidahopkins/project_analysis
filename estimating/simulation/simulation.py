@@ -4,6 +4,7 @@ import math
 import random
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
@@ -89,13 +90,9 @@ if est_points == 1:
             df['Cumulative Probability'] = [np.random.rand() for i in df.index]
             for index, row in df.iterrows():
                 if df.loc[index, 'Cumulative Probability'] < df.loc[index,'Total']:
-                    df.loc[index, 'Total'] = df.loc[index, 'Low'] \
-                        + math.sqrt(df.loc[index,'Cumulative Probability'] * df.loc[index,'Low Range'] \
-                            * df.loc[index,'Total Range'])
+                    df.loc[index, 'Total'] = df.loc[index, 'Low']  + math.sqrt(df.loc[index,'Cumulative Probability'] * df.loc[index,'Low Range'] * df.loc[index,'Total Range'])
                 else:
-                    df.loc[index, 'Total'] = df.loc[index,'High'] \
-                        - math.sqrt((1 - df.loc[index,'Cumulative Probability']) * df.loc[index,'High Range'] \
-                            * df.loc[index,'Total Range'])
+                    df.loc[index, 'Total'] = df.loc[index,'High'] - math.sqrt((1 - df.loc[index,'Cumulative Probability']) * df.loc[index,'High Range']  * df.loc[index,'Total Range'])
             sim_data.loc[i+1,divisions[0]] = df.loc[0,'Total']
             sim_data.loc[i+1,divisions[1]] = df.loc[1,'Total']
             sim_data.loc[i+1,divisions[2]] = df.loc[2,'Total']
@@ -193,13 +190,9 @@ if est_points == 3:
             df['Cumulative Probability'] = [np.random.rand() for i in df.index]
             for index, row in df.iterrows():
                 if df.loc[index, 'Cumulative Probability'] < df.loc[index,'Total']:
-                    df.loc[index, 'Total'] = df.loc[index, 'Low'] \
-                        + math.sqrt(df.loc[index,'Cumulative Probability'] * df.loc[index,'Low Range'] \
-                            * df.loc[index,'Total Range'])
+                    df.loc[index, 'Total'] = df.loc[index, 'Low']  + math.sqrt(df.loc[index,'Cumulative Probability'] * df.loc[index,'Low Range'] * df.loc[index,'Total Range'])
                 else:
-                    df.loc[index, 'Total'] = df.loc[index,'High'] \
-                        - math.sqrt((1 - df.loc[index,'Cumulative Probability']) * df.loc[index,'High Range'] \
-                            * df.loc[index,'Total Range'])
+                    df.loc[index, 'Total'] = df.loc[index,'High'] - math.sqrt((1 - df.loc[index,'Cumulative Probability']) * df.loc[index,'High Range'] * df.loc[index,'Total Range'])
             sim_data.loc[i+1,divisions[0]] = df.loc[0,'Total']
             sim_data.loc[i+1,divisions[1]] = df.loc[1,'Total']
             sim_data.loc[i+1,divisions[2]] = df.loc[2,'Total']
@@ -240,6 +233,8 @@ sim_data.to_excel('raw_sim_data.xlsx')
 five_below_ave = sim_data['Total'].mean() * 0.95
 five_abv_ave =  sim_data['Total'].mean() * 1.05
 ten_above_ave = sim_data['Total'].mean() * 1.1
+three_qtr = sim_data['Total'].quantile(0.75)
+nine_five = sim_data['Total'].quantile(0.95)
 results = pd.DataFrame()
 results['description']=''
 results['result']=''
@@ -247,23 +242,48 @@ results.loc[1,'description'] = 'Average Value'
 results.loc[2,'description'] = 'Percent Above: {:.2f}'.format(five_below_ave)
 results.loc[3,'description'] = 'Percent Above: {:.2f}'.format(five_abv_ave)
 results.loc[4,'description'] = 'Percent Above: {:.2f}'.format(ten_above_ave)
+results.loc[5,'description'] = '75th Percentile'
+results.loc[6,'description'] = '95th Percentile'
 results.loc[1,'result'] = sim_data['Total'].mean().round(2)
 results.loc[2,'result'] = sum(sim_data['Total'] > five_below_ave)/iterations
 results.loc[3,'result'] = sum(sim_data['Total'] > five_abv_ave)/iterations
 results.loc[4,'result'] = sum(sim_data['Total'] > ten_above_ave)/iterations
+results.loc[5,'result'] = three_qtr
+results.loc[6,'result'] = nine_five
 results.to_excel('sim_results.xlsx')
 plot_data = sim_data['Total']
 plot_mean = plot_data.mean()
-plot_data.plot.hist(grid=True, bins=bin_size, color='#607c8e', rwidth=0.9)
+
+#plot_data.plot.hist(grid=True, bins=bin_size, color='#607c8e', rwidth=0.9)
 #below needs to be fixed as it is needed to be updated by the dataset
 #plt.axvline(plot_mean, color = "r", linestyle= "dashed", linewidth = 2)
 #plt.annotate('Mean = '+ str(round(plot_mean,2)),xy=(plot_mean,200), xycoords='data', \
              #xytext=(265000,400), arrowprops=dict(arrowstyle="->",connectionstyle="arc3"),)
-plt.title('Simulation Histogram')
+
+'''plt.title('Simulation Histogram')
 plt.xlabel
 plt.ylabel
 plt.grid(axis='y', alpha=0.75)
-plt.savefig('simulation_histogram', dpi=300)
+plt.savefig('simulation_histogram', dpi=300)'''
+
+risk_hist = sns.histplot(plot_data, stat="density" ,bins=bin_size, kde=True, color="b")
+#risk_img = risk_hist.get_figure()
+#risk_img.savefig('risk_histogram.png')
+
+quant_50, quant_75, quant_95 = plot_data.quantile(0.5), plot_data.quantile(0.75), plot_data.quantile(0.95)
+
+# [quantile, opacity, length]
+quants = [[quant_50, 1, 0.46],  [quant_75, 0.8, 0.56], [quant_95, 0.6, 0.66]]
+
+# Plot the lines with a loop
+for i in quants:
+    plt.axvline(i[0], color = "m", alpha = i[1], ymax = i[2], linestyle = ":")
+
+
+#plt.axvline(plot_mean, color = "r", linestyle= "dashed", linewidth = 2)
+
+plt.savefig('simulation_histogram', dpi=600)
+
 stop_time = time.perf_counter()
 total_time = stop_time - start_time
 print(total_time)
