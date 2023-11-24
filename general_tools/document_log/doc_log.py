@@ -11,7 +11,7 @@ from openpyxl import Workbook
 dir_path = input('what is the file path?')
 
 save_to_current = input('do you want to save output to another location? [y/n]?')
-if save_to_current == 'y':
+if save_to_current == 'n':
     save_path = dir_path
 else:
     save_path = input('what is the file path to save to?')
